@@ -1,3 +1,9 @@
+适用于形如下面的测力计：
+<img width="1279" height="1706" alt="46311f3e091cdccee69b7dcecb6edf6f" src="https://github.com/user-attachments/assets/d75f3ee5-7be1-49fc-9c5e-a1f5809e32a0" />
+淘宝买的测力计配套软件太过于清朝同时没有数据转发功能，不能用于和其他设备同步记录数据，所以写了这个python程序。
+可以用于形如上述图片的设备（大概）
+
+
 # 测力计实时读取
 
 ## 首次运行
