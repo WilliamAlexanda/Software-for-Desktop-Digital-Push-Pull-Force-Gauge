@@ -11,7 +11,7 @@
 在 PowerShell 中执行：
 
 ```powershell
-cd D:\测力计读取
+cd ~\文件所在文件夹
 py app.py
 ```
 
