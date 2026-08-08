@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import ctypes
+import os
 import queue
+import re
+import subprocess
 import threading
 import time
 import tkinter as tk
@@ -13,7 +16,7 @@ from tkinter import messagebox, ttk
 from ctypes import wintypes
 
 
-BAUDRATE = 115200
+FORCE_BAUDRATE = 2400
 START_COMMAND = b"e"
 DEFAULT_NEWTONS_PER_COUNT = 0.001
 READ_TIMEOUT_MS = 10
@@ -78,6 +81,37 @@ def raise_last_error(action: str) -> None:
 
 def counts_to_newtons(raw_integer: int, newtons_per_count: float) -> float:
     return raw_integer * newtons_per_count
+
+
+def configure_force_port(port_name: str) -> None:
+    if not re.fullmatch(r"COM\d+", port_name, re.IGNORECASE):
+        raise ValueError("串口格式必须为 COM 加数字，例如 COM14")
+
+    mode_executable = os.path.join(os.environ["SystemRoot"], "System32", "mode.com")
+    current = subprocess.run(
+        [mode_executable, port_name],
+        capture_output=True,
+        text=True,
+    )
+    baud_match = re.search(r"(?:Baud|波特率)\s*:\s*(\d+)", current.stdout, re.IGNORECASE)
+    if baud_match and int(baud_match.group(1)) == FORCE_BAUDRATE:
+        return
+
+    completed = subprocess.run(
+        [
+            mode_executable,
+            f"{port_name}:",
+            f"BAUD={FORCE_BAUDRATE}",
+            "PARITY=n",
+            "DATA=8",
+            "STOP=1",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or completed.stdout.strip() or "未知错误"
+        raise OSError(f"无法配置 {port_name} 为 {FORCE_BAUDRATE} 波特率：{detail}")
 
 
 class NativeSerialPort:
@@ -281,6 +315,7 @@ class ForceGaugeApp:
         serial_port = NativeSerialPort(port_name)
 
         try:
+            configure_force_port(port_name)
             serial_port.open()
             self.messages.put(("connected", port_name))
             parser = ForceFrameParser()
